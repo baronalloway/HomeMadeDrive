@@ -1,0 +1,241 @@
+/*
+BARON ALLOWAY
+Mr. Lim
+ICS4U1-1
+Project 3
+*/
+
+package alloway_baron_project3_v2;
+
+import it.sauronsoftware.ftp4j.FTPAbortedException;
+import it.sauronsoftware.ftp4j.FTPClient;
+import it.sauronsoftware.ftp4j.FTPDataTransferException;
+import it.sauronsoftware.ftp4j.FTPException;
+import it.sauronsoftware.ftp4j.FTPFile;
+import it.sauronsoftware.ftp4j.FTPIllegalReplyException;
+import it.sauronsoftware.ftp4j.FTPListParseException;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Scanner;
+
+/**
+ *
+ * @author Baron
+ */
+public class Alloway_Baron_Project3_V2 {
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) throws IllegalStateException, IOException, FTPIllegalReplyException, FTPException, FTPDataTransferException, FTPAbortedException, FTPListParseException, ParseException {
+        FTPClient client = new FTPClient();
+        Scanner myScanner = new Scanner(System.in);
+        String servername;
+        String password;
+        String username;
+        File f = new File("/Users/Baron/Server");
+        File[] listOfFiles;
+        FTPFile[] listOfServerFiles;
+        boolean fileOnServer = false;
+        Calendar myDate = Calendar.getInstance();
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        String lastModified = "";
+        String currentDate;
+        int currentYear;
+        int currentMonth;
+        int currentDay;
+        int currentHour;
+        int currentMinute;
+        int currentSecond;
+        FileWriter writeFile = new FileWriter("date.dat");
+        FileReader readFile = new FileReader("date.dat");
+        Scanner fileScanner = new Scanner(readFile);
+        boolean serverFileExists = false;
+        Calendar lastRunDate = null;
+        
+      
+        ///////////////////////////////////////CONNECTION LOGIC/////////////////////////////////////////////
+        
+        //welcome the user to the FTP service
+        System.out.println("Welcome to the Java FTP service.");
+        //requesting server address
+        System.out.println("Please enter the server address (No prefixes please)");
+        //take in the servername
+        servername = myScanner.nextLine();
+        //connect to the server
+        client.connect(servername);
+        //prompt user for username
+        System.out.println("Connected. Please enter your username");
+        //wait for username
+        username = myScanner.nextLine();
+        //prompt user for password
+        System.out.println("Hello, " + username + ". Please enter your password");
+        //wait for password
+        password = myScanner.nextLine();
+        //login to the server using the username and password provided
+        client.login(username, password);
+        //alert user if login successful
+        System.out.println("Successfully logged in!");
+        //navigate to the folder called "Server". This is where the syncing will be done
+        client.changeDirectory("Server");
+        
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        
+        ///////////////////////LIST OF FILES LOGIC//////////////////////////////////////////////////////////
+        
+        //gather the list of files on the computer
+        listOfFiles = f.listFiles();
+        //gather the list of files on the server
+        listOfServerFiles = client.list();
+        
+        
+        try{
+        //try to read the date the last sync was performed
+        lastModified = fileScanner.nextLine();
+        }
+        //if it doesn't exist (the first time the user ever runs the program)
+        catch (Exception e)
+        {
+            //get the current date and time
+            String tempDate = dateFormat.format(myDate.getTime());
+            //write the current date to the file
+            writeFile.write(tempDate);
+            //close the writing file
+            writeFile.close();
+            
+            //upload everything that exists in the local file to the server
+            //FIRST TIME USER RUNS THE PROGRAM THE SERVER SHOULD BE BLANK
+            for(int i = 0; i < listOfFiles.length; i++)
+            {
+                //upload all the local files to the server
+             client.upload(listOfFiles[i]);
+            }
+            
+            //asking user to please restart the program
+            System.out.println("The log file was missing. Please restart the program.");
+            //exit the program
+            System.exit(0);
+            
+            //by this point, there will be an exact replica of the files on the computer as there are on the server
+            
+        }
+        
+        
+        //parsing the string we just read from the file, to the date
+        lastRunDate.setTime(dateFormat.parse(lastModified));
+        
+        
+        
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        
+        
+        //////////////////////////////CREATE AND DELETE FILES LOGIC/////////////////////////////////////////////////////////
+        
+        //cycle through this as many times as there are files on the local folder
+        for(int i = 0; i < listOfFiles.length; i++)
+        {
+            //create a new variable called 'a' and make it zero
+           int a = 0; 
+            
+           //run the following loop at least once
+            do
+            {
+                //if the name of the local file we are looking for matches the name of the server file
+               if(listOfFiles[i].getName().equals(listOfServerFiles[a].getName()))
+               {
+                   //the file exists on the server
+                   serverFileExists = true;
+               } 
+               //otherwise
+               else {
+                   //the file does not exist on the server
+                   serverFileExists = false;
+               }
+                //increment a, and check for the next file that is on the server
+                a++;
+             //run this loop repeatedly while we dont find the file on the server OR we reach the end of the list 
+            }while(serverFileExists == false && a < listOfServerFiles.length);
+            
+            //if its still false by this point, we know it doesn't exist on the server
+            if(serverFileExists == false)
+            {
+               //now we must check if it was not yet added to the server or deleted from the server
+                
+                //COMPARE THE LAST MODIFIED DATE TO THE LAST TIME THIS PROGRAM RAN
+                
+                //IF THE FILE WAS LAST MODIFIED AFTER THE LAST TIME WE RAN THIS PROGRAM, ADD IT TO THE SERVER
+                
+                //IF THE FILE WAS LAST MODIFIED BEFORE THE LAST TIME WE RAN THIS PROGRAM, DELETE IT FROM LOCAL
+            }
+            //otherwise, if we've found that it actually exists on the server
+            else if(serverFileExists == true)
+            {
+                //set it back to false for the next round
+                serverFileExists = false;
+            }
+        }
+        
+        
+        
+        
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        
+        
+        /////////////////////////////MOST RECENT VERSION LOGIC//////////////////////////////////////////////////////////////
+        
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        
+        
+        
+        
+//        
+//        String files;
+//        listOfFiles = f.listFiles();
+//        
+//        
+//        
+//        
+//        String serverFiles;
+//        listOfServerFiles = client.list();
+//        
+//        for(int i = 0; i < listOfFiles.length; i++)
+//        {
+//            files = listOfFiles[i].getName();
+//            System.out.println(files);
+//            
+//        }
+        
+        
+
+  
+ 
+  
+  
+   
+        
+        client.disconnect(true);
+        
+        
+        
+        
+        
+        
+    
+       
+        
+    }
+    
+    
+    
+    public static void folderCheck()
+    {
+        
+    }
+    
+}

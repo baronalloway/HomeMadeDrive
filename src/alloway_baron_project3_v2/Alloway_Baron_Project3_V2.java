@@ -1,0 +1,194 @@
+/*
+ BARON ALLOWAY
+ Mr. Lim
+ ICS4U1-1
+ Project 3
+ */
+package alloway_baron_project3_v2;
+
+import it.sauronsoftware.ftp4j.FTPAbortedException;
+import it.sauronsoftware.ftp4j.FTPClient;
+import it.sauronsoftware.ftp4j.FTPDataTransferException;
+import it.sauronsoftware.ftp4j.FTPException;
+import it.sauronsoftware.ftp4j.FTPFile;
+import it.sauronsoftware.ftp4j.FTPIllegalReplyException;
+import it.sauronsoftware.ftp4j.FTPListParseException;
+import java.io.File;
+import java.io.IOException;
+import java.util.Scanner;
+
+/**
+ *
+ * @author Baron
+ */
+public class Alloway_Baron_Project3_V2 {
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) throws IllegalStateException, IOException, FTPIllegalReplyException, FTPException, FTPDataTransferException, FTPAbortedException, FTPListParseException {
+
+        //creating a new FTP client using the FTP API that has already been imported
+        FTPClient client = new FTPClient();
+
+        //defining variables and scanner
+        Scanner myScanner = new Scanner(System.in);
+        String servername;
+        String password;
+        String username;
+        //creating a new file object, and specifying the path of the folder it is related to
+        File f = new File("/Server");
+        File[] listOfFiles;
+        FTPFile[] listOfServerFiles;
+        boolean serverFileExists = false;
+        boolean localFileExists = false;
+        String userinput;
+
+        //welcome the user to the FTP service
+        System.out.println("Welcome to the Java FTP service.");
+        //requesting server address
+        System.out.println("Please enter the server address (No prefixes please)");
+        //take in the servername
+        servername = myScanner.nextLine();
+        //connect to the server
+        client.connect(servername);
+        //prompt user for username
+        System.out.println("Connected. Please enter your username");
+        //wait for username
+        username = myScanner.nextLine();
+        //prompt user for password
+        System.out.println("Hello, " + username + ". Please enter your password");
+        //wait for password
+        password = myScanner.nextLine();
+        //login to the server using the username and password provided
+        client.login(username, password);
+        //alert user if login successful
+        System.out.println("Successfully logged in!");
+        //navigate to the folder called "Server". This is where the syncing will be done
+        client.changeDirectory("Server");
+
+        //run the following loop repeatedly
+        while (true) {
+
+            //instruct the user
+            System.out.println("Press \" A \" to sync, or \"Q\" to quit");
+
+            //take in the user's option
+            userinput = myScanner.nextLine();
+
+            //if they have entered "A"
+            if (userinput.equals("A") || userinput.equals("a")) {
+
+                //gather the list of files on the computer
+                listOfFiles = f.listFiles();
+                //gather the list of files on the server
+                listOfServerFiles = client.list();
+
+                //if the server is empty
+                if (listOfServerFiles.length == 0) {
+                    //upload all files from local to server, if they exist
+                    for (int i = 0; i < listOfFiles.length; i++) {
+                        client.upload(listOfFiles[i]);
+                    }
+                }
+
+                //if there are files on the server
+                if (listOfServerFiles.length != 0) {
+
+                    //cycle through this as many times as there are files on the local folder
+                    for (int i = 0; i < listOfFiles.length; i++) {
+                        //create a new variable called 'a' and make it zero
+                        int a = 0;
+
+                        //run the following loop at least once
+                        do {
+                            //if the name of the local file we are looking for matches the name of the server file
+                            if (listOfFiles[i].getName().equals(listOfServerFiles[a].getName())) {
+                                //the file exists on the server
+                                serverFileExists = true;
+                            } //otherwise
+                            else {
+                                //the file does not exist on the server
+                                serverFileExists = false;
+                            }
+                            //increment a, and check for the next file that is on the server
+                            a++;
+                            //run this loop repeatedly while we dont find the file on the server OR we reach the end of the list 
+                        } while (serverFileExists == false && a < listOfServerFiles.length);
+
+                        //if its still false by this point, we know it doesn't exist on the server
+                        if (serverFileExists == false) {
+
+                            //UPLOAD THE FILE TO THE SERVER
+                            client.upload(listOfFiles[i]);
+
+                            //set the boolean false (just coding against any possible glitches)
+                            serverFileExists = false;
+
+                        } //otherwise, if we've found that it actually exists on the server
+                        else if (serverFileExists == true) {
+                            //set it back to false for the next round of searching
+                            serverFileExists = false;
+                        }
+                    }
+                }
+
+                //if there are files in the local folder
+                if (listOfFiles.length != 0) {
+                    //cycle through this as many times as there are files on the server
+                    for (int i = 0; i < listOfServerFiles.length; i++) {
+                        //create a new variable called 'a' and make it zero
+                        int a = 0;
+
+                        //run the following loop at least once
+                        do {
+                            //if the name of the local file we are looking for matches the name of the server file
+                            if (listOfServerFiles[i].getName().equals(listOfFiles[a].getName())) {
+                                //the file exists in the local folder
+                                localFileExists = true;
+                            } //otherwise
+                            else {
+                                //the file does not exist in the local folder
+                                localFileExists = false;
+                            }
+                            //increment a, and check for the next file that is on the server
+                            a++;
+                            //run this loop repeatedly while we dont find the file in the local folder OR we reach the end of the list 
+                        } while (localFileExists == false && a < listOfServerFiles.length);
+
+                        //if we have cycled through all the files and the file does not exist in the local folder
+                        if (localFileExists == false) {
+
+                            //delete the file from the server
+                            client.deleteFile(listOfServerFiles[i].getName());
+
+                            //set the boolean false (just coding against any possible glitches)
+                            localFileExists = false;
+
+                        } //otherwise, if we've found that it actually exists in the local folder
+                        else if (localFileExists == true) {
+                            //set it back to false for the next round of searching
+                            localFileExists = false;
+                        }
+                    }
+                }
+                //inform the user that the sync was successful
+                System.out.println("Files synced successfully!");
+            } //otherwise, if the user did not input "A"
+            else {
+                //disconnect from the folder
+                client.disconnect(true);
+                //let the user know that the files are now in sync
+                System.out.println("Thanks for using the program. Goodbye.");
+                //exit the program
+                exitProgram();
+            }
+
+        }
+    }
+
+    public static void exitProgram() {
+
+        System.exit(0);
+    }
+}

@@ -1,0 +1,207 @@
+/*
+ BARON ALLOWAY
+ Mr. Lim
+ ICS4U1-1
+ Project 3
+ */
+package alloway_baron_project3_v2;
+
+import it.sauronsoftware.ftp4j.FTPAbortedException;
+import it.sauronsoftware.ftp4j.FTPClient;
+import it.sauronsoftware.ftp4j.FTPDataTransferException;
+import it.sauronsoftware.ftp4j.FTPException;
+import it.sauronsoftware.ftp4j.FTPFile;
+import it.sauronsoftware.ftp4j.FTPIllegalReplyException;
+import it.sauronsoftware.ftp4j.FTPListParseException;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Scanner;
+
+/**
+ *
+ * @author Baron
+ */
+public class Alloway_Baron_Project3_V2 {
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) throws IllegalStateException, IOException, FTPIllegalReplyException, FTPException, FTPDataTransferException, FTPAbortedException, FTPListParseException, ParseException {
+
+        FTPClient client = new FTPClient();
+        Scanner myScanner = new Scanner(System.in);
+        String servername;
+        String password;
+        String username;
+        File f = new File("/Users/Baron/Server");
+        File[] listOfFiles;
+        FTPFile[] listOfServerFiles;
+        boolean fileOnServer = false;
+        Calendar myDate = Calendar.getInstance();
+        DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+        String lastModified;
+        String currentDate;
+        int currentYear;
+        int currentMonth;
+        int currentDay;
+        int currentHour;
+        int currentMinute;
+        int currentSecond;
+
+        FileReader readFile = new FileReader("date.dat");
+        BufferedReader buffRead = new BufferedReader(readFile);
+        Scanner fileScanner = new Scanner(readFile);
+        boolean serverFileExists = false;
+        Calendar lastRunDate = null;
+        boolean localFileExists = false;
+
+        ///////////////////////////////////////CONNECTION LOGIC/////////////////////////////////////////////
+        //welcome the user to the FTP service
+        System.out.println("Welcome to the Java FTP service.");
+        //requesting server address
+        System.out.println("Please enter the server address (No prefixes please)");
+        //take in the servername
+        servername = myScanner.nextLine();
+        //connect to the server
+        client.connect(servername);
+        //prompt user for username
+        System.out.println("Connected. Please enter your username");
+        //wait for username
+        username = myScanner.nextLine();
+        //prompt user for password
+        System.out.println("Hello, " + username + ". Please enter your password");
+        //wait for password
+        password = myScanner.nextLine();
+        //login to the server using the username and password provided
+        client.login(username, password);
+        //alert user if login successful
+        System.out.println("Successfully logged in!");
+        //navigate to the folder called "Server". This is where the syncing will be done
+        client.changeDirectory("Server");
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////
+        ///////////////////////LIST OF FILES LOGIC//////////////////////////////////////////////////////////
+        //gather the list of files on the computer
+        listOfFiles = f.listFiles();
+        //gather the list of files on the server
+        listOfServerFiles = client.list();
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        
+        //if the server is empty
+        if(listOfServerFiles.length == 0)
+        {
+            //upload all files from local to server, if they exist
+            for(int i = 0; i < listOfFiles.length; i++)
+            {
+                client.upload(listOfFiles[i]);
+            }
+        }
+        
+        
+        
+        
+        if(listOfServerFiles.length != 0)
+        {
+            
+        
+        //////////////////////////////CREATE AND DELETE FILES LOGIC/////////////////////////////////////////////////////////
+        //cycle through this as many times as there are files on the local folder
+        for (int i = 0; i < listOfFiles.length; i++) {
+            //create a new variable called 'a' and make it zero
+            int a = 0;
+
+            
+            //run the following loop at least once
+            do {
+                //if the name of the local file we are looking for matches the name of the server file
+                if (listOfFiles[i].getName().equals(listOfServerFiles[a].getName())) {
+                    //the file exists on the server
+                    serverFileExists = true;
+                } //otherwise
+                else {
+                    //the file does not exist on the server
+                    serverFileExists = false;
+                }
+                //increment a, and check for the next file that is on the server
+                a++;
+                //run this loop repeatedly while we dont find the file on the server OR we reach the end of the list 
+            } while (serverFileExists == false && a < listOfServerFiles.length);
+
+            //if its still false by this point, we know it doesn't exist on the server
+            if (serverFileExists == false) {
+
+                //UPLOAD THE FILE TO THE SERVER
+                client.upload(listOfFiles[i]);
+
+                //set the boolean false (just coding against any possible glitches)
+                serverFileExists = false;
+
+            } //otherwise, if we've found that it actually exists on the server
+            else if (serverFileExists == true) {
+                //set it back to false for the next round of searching
+                serverFileExists = false;
+            }
+        }
+        }
+
+        //by this point, all the files added to the computer on the server
+        //IF THE FILES ARE ON THE SERVER BUT NOT ON THE COMPUTER, DELETE FROM THE SERVER
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        
+
+        //cycle through this as many times as there are files on the local folder
+        
+        if(listOfFiles.length != 0)
+        {
+            
+        
+        for (int i = 0; i < listOfServerFiles.length; i++) {
+            //create a new variable called 'a' and make it zero
+            int a = 0;
+
+            //run the following loop at least once
+            do {
+                //if the name of the local file we are looking for matches the name of the server file
+                if (listOfServerFiles[i].getName().equals(listOfFiles[a].getName())) {
+                    //the file exists on the local
+                    localFileExists = true;
+                } //otherwise
+                else {
+                    //the file does not exist on the local
+                    localFileExists = false;
+                }
+                //increment a, and check for the next file that is on the server
+                a++;
+                //run this loop repeatedly while we dont find the file on the local OR we reach the end of the list 
+            } while (localFileExists == false && a < listOfServerFiles.length);
+
+            //if its still false by this point, we know it doesn't exist on the local
+            if (localFileExists == false) {
+
+                //DELETE THE FILE FROM THE SERVER
+                client.deleteFile(listOfServerFiles[i].getName());
+
+                //set the boolean false (just coding against any possible glitches)
+                localFileExists = false;
+
+            } //otherwise, if we've found that it actually exists on the local
+            else if (localFileExists == true) {
+                //set it back to false for the next round of searching
+                localFileExists = false;
+            }
+        }
+        }
+
+        client.disconnect(true);
+
+    }
+
+}
